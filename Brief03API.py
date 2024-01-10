@@ -33,8 +33,8 @@ async def dix_derniere_transaction(city: str):
 
 # User Story 3
 #En tant qu'Agent je souhaite connaitre le nombre d'acquisitions dans ma ville (Paris) durant l'année 2022
-@app.get("/transactions_year_city/")
-async def transactions_year_city(year: str = Depends(validate_year), city: str = ""):
+@app.get("/transaction_ville_par_ans/")
+async def transaction_ville_par_ans(year: str = Depends(validate_year), city: str = ""):
     start_date = f"{year}-01-01"
     end_date = f"{str(int(year) + 1)}-01-01"
     req = f"SELECT * FROM transactions_sample WHERE date_transaction >= '{start_date}' AND date_transaction < '{end_date}' AND ville = '{city}';"
@@ -43,9 +43,9 @@ async def transactions_year_city(year: str = Depends(validate_year), city: str =
     return result  # Retourne les résultats
 
 #User story 4
-#
-@app.get("/avg_price_msqr_house/")
-async def avg_price_msqr_house(year: int):
+#En tant qu'Agent je souhaite connaitre le nombre d'acquisitions dans ma ville (Paris) durant l'année 2022
+@app.get("/prix_moyen_par_maison/")
+async def prix_moyen_par_maison(year: int):
     cur = con.cursor()
     res = cur.execute(f"SELECT AVG(prix/surface_habitable) FROM transactions_sample WHERE type_batiment LIKE 'Maison' AND strftime('%Y', date_transaction) = '{year}'")
     result = res.fetchone()
@@ -94,9 +94,19 @@ async def repartition_appartement(year: int,departement: int):
         return result
     
 #User story 8
-#En tant qu'Agent je souhaite connaitre la répartition des appartements vendus (à Marseille) durant l'année 2022 en fonction du nombre de pièces
+#En tant qu'Agent je souhaite connaitre le prix au m2 moyen pour les maisons vendues à Avignon l'année 2022                                                                                                                                                                                                        
+@app.get("/prix_moyen_m2_par_maison/")
+async def prix_moyen_m2_par_maison(city: str, year:int):
+    cur = con.cursor()
+    res = cur.execute(f"SELECT AVG(prix / surface_habitable) AS prix_moyen_m2 FROM transactions_sample WHERE type_batiment = 'Maison' AND ville = '{city}' AND date_transaction LIKE '{year}%'")
+    result = res.fetchone()
+    if result is None:
+        return "PAS DE RESULTAT"
+    else:
+        return result
     
-#User story 
+#User story 9
+#En tant que CEO, je veux consulter le nombre de transactions (tout type confondu) par département, ordonnées par ordre décroissant   
 @app.get("/transaction_par_departement")
 async def transaction_par_departement(departement: int):
     cur = con.cursor()
@@ -108,32 +118,19 @@ async def transaction_par_departement(departement: int):
         return result
     
     
-#User story 9 a verifier 
-@app.get("/appartements_avec_revenu_fiscal_superieur_a_70k")
-async def appartements_avec_revenu_fiscal_superieur_a_70k(year: int, city: str, revenu_fiscal_moyen: int):
-    cur = con.cursor()
-    req = f"SELECT COUNT(*) AS nombre_ventes_appartements FROM transactions_sample ts INNER JOIN foyers_fiscaux ff ON ts.ville = ff.ville WHERE ff.revenu_fiscal_moyen > {revenu_fiscal_moyen} AND ff.date = 2018 AND ts.type_batiment = 'Appartement' AND ts.date_transaction >= '{year}-01-01' AND ts.date_transaction < '{year + 1}-01-01' AND UPPER(ff.ville) = UPPER('{city}')"
-    res = cur.execute(req)
-    result = res.fetchone()
-    if result is None:
-        return "PAS DE RESULTAT"
-    else:
-        return result
-
-#User story 10 
+#User story 11
+#En tant que CEO, je veux consulter le top 10 des villes les plus dynamiques en termes de transactions immobilières
 @app.get("/top_10_des_villes_avec_le_plus_de_transaction_immobiliere")
 async def top_10_des_villes_avec_le_plus_de_transaction_immobiliere():
     cur = con.cursor()
-    req = f"SELECT ville, COUNT(id_transaction) AS nombre_transactions FROM transactions_sample ts GROUP BY ville ORDER BY nombre_transactions DESC LIMIT 10;"
-    res = cur.execute(req)
-    result = res.fetchone()
-    if result is None:
+    req = f"SELECT ville, COUNT(id_transaction) AS nombre_transactions FROM transactions_sample GROUP BY ville ORDER BY nombre_transactions DESC LIMIT 10;"
+    cur.execute(req)
+    result = cur.fetchall()
+    if not result:
         return "PAS DE RESULTAT"
     else:
         return result
     
-#User story 11
-@app.get("/")
     
 
 
